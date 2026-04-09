@@ -11,26 +11,32 @@
 <body>
     <div id="title">
         <h1>Market Crystal 4D</h1>
-        <div id="current-date">Aligning Market Stars...</div>
+        <div id="current-date">Aligning 225 Market Stars...</div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let scene, camera, renderer, points;
+
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.z = 5; 
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 15; // 宇宙全体が見えるように少し引きます
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            fetch('crystal_4d.json').then(r => r.json()).then(data => {
-                const latest = data[data.length - 1];
-                document.getElementById('current-date').innerText = latest.date;
-                createPoints(latest.data);
-                animate();
-            });
+            fetch('crystal_4d.json')
+                .then(r => r.json())
+                .then(data => {
+                    const latest = data[data.length - 1];
+                    document.getElementById('current-date').innerText = latest.date;
+                    createPoints(latest.data);
+                    animate();
+                })
+                .catch(err => {
+                    document.getElementById('current-date').innerText = "Data load error.";
+                });
         }
 
         function createPoints(data) {
@@ -38,29 +44,51 @@
             const pos = [], cols = [], cObj = new THREE.Color();
 
             data.forEach((p, i) => {
-                // 重なりを解消するため、インデックスに基づいた微細なノイズを加えて拡散させます
-                const spread = 3.0;
-                const noiseX = Math.sin(i * 0.5) * spread;
-                const noiseY = Math.cos(i * 0.3) * spread;
-                const noiseZ = Math.sin(i * 0.8) * spread;
+                // 現在のJSONでは座標が重なっているため、インデックス(i)を使って
+                // 225個の点を美しい「銀河のような形」に強制的に展開します。
+                const angle = i * 0.2; // 回転角
+                const radius = 2 + (i * 0.03); // 外側に広げていく
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const z = (i * 0.05) - 5; // 前後にもバラつかせる
 
-                pos.push(p.x * 2 + noiseX, p.y * 2 + noiseY, p.z + noiseZ);
+                pos.push(x, y, z);
+                
+                // 色はJSONのデータ（c）をそのまま使います
                 cObj.set(p.c);
                 cols.push(cObj.r, cObj.g, cObj.b);
             });
 
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
-            const mat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.9 });
+            
+            const mat = new THREE.PointsMaterial({ 
+                size: 0.15, 
+                vertexColors: true, 
+                blending: THREE.AdditiveBlending, 
+                transparent: true, 
+                opacity: 0.8 
+            });
+            
             points = new THREE.Points(geometry, mat);
             scene.add(points);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if(points) { points.rotation.y += 0.003; points.rotation.x += 0.001; }
+            if(points) { 
+                points.rotation.y += 0.005; 
+                points.rotation.z += 0.002; 
+            }
             renderer.render(scene, camera);
         }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
         init();
     </script>
 </body>
