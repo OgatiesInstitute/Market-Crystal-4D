@@ -11,78 +11,56 @@
 <body>
     <div id="title">
         <h1>Market Crystal 4D</h1>
-        <div id="current-date">Initializing Universe...</div>
+        <div id="current-date">Aligning Market Stars...</div>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let scene, camera, renderer, points;
-
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 10; // 粒に近づけます
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+            camera.position.z = 5; 
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            fetch('crystal_4d.json')
-                .then(response => response.json())
-                .then(data => {
-                    const latestData = data[data.length - 1].data;
-                    document.getElementById('current-date').innerText = data[data.length - 1].date;
-                    createPoints(latestData);
-                    animate();
-                })
-                .catch(err => {
-                    document.getElementById('current-date').innerText = "Data load error.";
-                });
+            fetch('crystal_4d.json').then(r => r.json()).then(data => {
+                const latest = data[data.length - 1];
+                document.getElementById('current-date').innerText = latest.date;
+                createPoints(latest.data);
+                animate();
+            });
         }
 
         function createPoints(data) {
             const geometry = new THREE.BufferGeometry();
-            const positions = [];
-            const colors = [];
-            const colorObj = new THREE.Color();
+            const pos = [], cols = [], cObj = new THREE.Color();
 
-            data.forEach(p => {
-                // ここが重要！密集を避けるために座標を「15倍」に拡大します
-                positions.push(p.x * 15, p.y * 15, p.z * 15);
-                colorObj.set(p.c);
-                colors.push(colorObj.r, colorObj.g, colorObj.b);
+            data.forEach((p, i) => {
+                // 重なりを解消するため、インデックスに基づいた微細なノイズを加えて拡散させます
+                const spread = 3.0;
+                const noiseX = Math.sin(i * 0.5) * spread;
+                const noiseY = Math.cos(i * 0.3) * spread;
+                const noiseZ = Math.sin(i * 0.8) * spread;
+
+                pos.push(p.x * 2 + noiseX, p.y * 2 + noiseY, p.z + noiseZ);
+                cObj.set(p.c);
+                cols.push(cObj.r, cObj.g, cObj.b);
             });
 
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-            // 粒を少し大きく、光り輝く設定に（size: 0.2）
-            const material = new THREE.PointsMaterial({ 
-                size: 0.2, 
-                vertexColors: true, 
-                blending: THREE.AdditiveBlending,
-                transparent: true,
-                opacity: 0.8
-            });
-            points = new THREE.Points(geometry, material);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+            const mat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.9 });
+            points = new THREE.Points(geometry, mat);
             scene.add(points);
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            if (points) {
-                points.rotation.y += 0.005; // ゆっくり回転
-                points.rotation.z += 0.002;
-            }
+            if(points) { points.rotation.y += 0.003; points.rotation.x += 0.001; }
             renderer.render(scene, camera);
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
         init();
     </script>
 </body>
