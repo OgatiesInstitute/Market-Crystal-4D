@@ -1,0 +1,33 @@
+name: Update Market Crystal Data
+
+on:
+  schedule:
+    - cron: '0 9 * * *' # 日本時間 18:00 (UTC 9:00) に毎日実行
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install yfinance pandas scikit-learn torch
+
+      - name: Run update script
+        run: python scripts/generate_json.py # あなたのPythonスクリプト名に合わせてください
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add crystal_4d.json
+          git commit -m "Auto-update crystal data" || exit 0
+          git push
