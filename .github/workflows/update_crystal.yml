@@ -2,7 +2,7 @@ name: Update Market Crystal Data
 
 on:
   schedule:
-    - cron: '0 9 * * *' # 日本時間 18:00 (UTC 9:00) に毎日実行
+    - cron: '0 9 * * *' # 日本時間 18:00
   workflow_dispatch: # 手動実行用
 
 jobs:
@@ -10,19 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4 # v2からv4に更新
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5 # v2からv5に更新
         with:
-          python-version: '3.x'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
-          pip install yfinance pandas scikit-learn torch
+          pip install yfinance pandas scikit-learn torch lxml Beautifulsoup4
 
       - name: Run update script
-        run: python scripts/generate_json.py # あなたのPythonスクリプト名に合わせてください
+        # ファイルがトップ階層にある場合は scripts/ を消して python generate_json.py にしてください
+        run: python generate_json.py 
 
       - name: Commit and push changes
         run: |
