@@ -11,18 +11,17 @@
 <body>
     <div id="title">
         <h1>Market Crystal 4D</h1>
-        <div id="current-date">Loading Market Data...</div>
+        <div id="current-date">Initializing Universe...</div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         let scene, camera, renderer, points;
-        let animationData = [];
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
+            camera.position.z = 10; // 粒に近づけます
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -31,16 +30,13 @@
             fetch('crystal_4d.json')
                 .then(response => response.json())
                 .then(data => {
-                    animationData = data;
-                    if (data.length > 0) {
-                        createPoints(data[0].data);
-                        document.getElementById('current-date').innerText = data[0].date;
-                        animate();
-                    }
+                    const latestData = data[data.length - 1].data;
+                    document.getElementById('current-date').innerText = data[data.length - 1].date;
+                    createPoints(latestData);
+                    animate();
                 })
                 .catch(err => {
-                    document.getElementById('current-date').innerText = "Data load error. Check crystal_4d.json.";
-                    console.error(err);
+                    document.getElementById('current-date').innerText = "Data load error.";
                 });
         }
 
@@ -51,8 +47,8 @@
             const colorObj = new THREE.Color();
 
             data.forEach(p => {
-                // 座標を5倍に強調して表示
-                positions.push(p.x * 5, p.y * 5, p.z);
+                // ここが重要！密集を避けるために座標を「15倍」に拡大します
+                positions.push(p.x * 15, p.y * 15, p.z * 15);
                 colorObj.set(p.c);
                 colors.push(colorObj.r, colorObj.g, colorObj.b);
             });
@@ -60,7 +56,14 @@
             geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-            const material = new THREE.PointsMaterial({ size: 0.15, vertexColors: true, blending: THREE.AdditiveBlending });
+            // 粒を少し大きく、光り輝く設定に（size: 0.2）
+            const material = new THREE.PointsMaterial({ 
+                size: 0.2, 
+                vertexColors: true, 
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.8
+            });
             points = new THREE.Points(geometry, material);
             scene.add(points);
         }
@@ -68,8 +71,8 @@
         function animate() {
             requestAnimationFrame(animate);
             if (points) {
-                points.rotation.y += 0.005;
-                points.rotation.x += 0.002;
+                points.rotation.y += 0.005; // ゆっくり回転
+                points.rotation.z += 0.002;
             }
             renderer.render(scene, camera);
         }
