@@ -39,22 +39,15 @@
                 });
         }
 
-        function createPoints(data) {
+function createPoints(data) {
             const geometry = new THREE.BufferGeometry();
             const pos = [], cols = [], cObj = new THREE.Color();
 
             data.forEach((p, i) => {
-                // 現在のJSONでは座標が重なっているため、インデックス(i)を使って
-                // 225個の点を美しい「銀河のような形」に強制的に展開します。
-                const angle = i * 0.2; // 回転角
-                const radius = 2 + (i * 0.03); // 外側に広げていく
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
-                const z = (i * 0.05) - 5; // 前後にもバラつかせる
-
-                pos.push(x, y, z);
+                // AIが計算した座標(p.x, p.y)をそのまま使い、見やすいように3倍程度に広げます
+                // z軸は、あなたが設定した「銘柄順の高さ」がそのまま反映されます
+                pos.push(p.x * 3, p.y * 3, p.z);
                 
-                // 色はJSONのデータ（c）をそのまま使います
                 cObj.set(p.c);
                 cols.push(cObj.r, cObj.g, cObj.b);
             });
@@ -73,7 +66,6 @@
             points = new THREE.Points(geometry, mat);
             scene.add(points);
         }
-
         function animate() {
             requestAnimationFrame(animate);
             if(points) { 
